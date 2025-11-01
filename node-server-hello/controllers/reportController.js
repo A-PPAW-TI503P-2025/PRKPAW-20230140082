@@ -1,26 +1,41 @@
 const { Presensi } = require('../models');
-const { format } = require('date-fns-tz');
-const timeZone = 'Asia/Jakarta';
+const { Op } = require("sequelize");
 
 exports.getDailyReport = async (req, res) => {
   try {
-    const records = await Presensi.findAll({ order: [['checkIn', 'ASC']] });
+    const { nama, tanggalMulai, tanggalSelesai } = req.query;
+    let where = {};
 
-    const data = records.map(r => ({
-      id: r.id,
-      userId: r.userId,
-      nama: r.nama,
-      checkIn: r.checkIn ? format(r.checkIn, "yyyy-MM-dd HH:mm:ssXXX", { timeZone }) : null,
-      checkOut: r.checkOut ? format(r.checkOut, "yyyy-MM-dd HH:mm:ssXXX", { timeZone }) : null,
-      createdAt: r.createdAt ? format(r.createdAt, "yyyy-MM-dd HH:mm:ssXXX", { timeZone }) : null,
-      updatedAt: r.updatedAt ? format(r.updatedAt, "yyyy-MM-dd HH:mm:ssXXX", { timeZone }) : null
-    }));
+    if (nama) {
+      where.nama = { [Op.like]: `%${nama}%` };
+    }
+
+    if (tanggalMulai && tanggalSelesai) {
+      const start = new Date(tanggalMulai);
+      const end = new Date(tanggalSelesai);
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+        return res.status(400).json({ message: 'tanggalMulai atau tanggalSelesai tidak valid' });
+      }
+      end.setHours(23, 59, 59, 999);
+      where.checkIn = { [Op.between]: [start, end] };
+    } else if (tanggalMulai) {
+      const start = new Date(tanggalMulai);
+      if (isNaN(start.getTime())) return res.status(400).json({ message: 'tanggalMulai tidak valid' });
+      where.checkIn = { [Op.gte]: start };
+    } else if (tanggalSelesai) {
+      const end = new Date(tanggalSelesai);
+      if (isNaN(end.getTime())) return res.status(400).json({ message: 'tanggalSelesai tidak valid' });
+      end.setHours(23, 59, 59, 999);
+      where.checkIn = { [Op.lte]: end };
+    }
+
+    const records = await Presensi.findAll({ where, order: [['checkIn', 'ASC']] });
 
     res.json({
-      reportDate: format(new Date(), "yyyy-MM-dd", { timeZone }),
-      data
+      reportDate: new Date().toLocaleDateString(),
+      data: records,
     });
   } catch (error) {
-    res.status(500).json({ message: 'Gagal mengambil laporan', error: error.message });
+    res.status(500).json({ message: "Gagal mengambil laporan", error: error.message });
   }
 };
