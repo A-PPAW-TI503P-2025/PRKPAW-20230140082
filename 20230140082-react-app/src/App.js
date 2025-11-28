@@ -1,31 +1,66 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { jwtDecode } from 'jwt-decode';
+
+import Navbar from './components/Navbar';
 import LoginPage from './components/LoginPage';
 import RegisterPage from './components/RegisterPage';
 import DashboardPage from './components/DashboardPage';
+import PresensiPage from './components/PresensiPage';
+import ReportPage from './components/ReportPage';
 
 function App() {
-  const token = localStorage.getItem('token'); // cek login
+  const token = localStorage.getItem('token');
+
+  let user = null;
+  try {
+    if (token) user = jwtDecode(token);
+  } catch (e) {
+    localStorage.removeItem('token');
+    user = null;
+  }
+
+  const isAuthenticated = !!user;
 
   return (
     <Router>
       <div>
-        {/* tampilkan nav Login/Register hanya kalau belum login */}
-        {!token && (
-          <nav className="p-4 bg-gray-100">
-            <Link to="/login" className="mr-4">Login</Link>
-            <Link to="/register">Register</Link>
-          </nav>
-        )}
+        {isAuthenticated && <Navbar />}
 
         <Routes>
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="/" element={<LoginPage />} />
+          <Route
+            path="/login"
+            element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <LoginPage />}
+          />
+          <Route
+            path="/register"
+            element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <RegisterPage />}
+          />
+
+          <Route
+            path="/dashboard"
+            element={isAuthenticated ? <DashboardPage /> : <Navigate to="/login" replace />}
+          />
+
+          <Route
+            path="/presensi"
+            element={isAuthenticated ? <PresensiPage /> : <Navigate to="/login" replace />}
+          />
+
+          <Route
+            path="/reports"
+            element={
+              isAuthenticated && user && user.role === 'admin'
+                ? <ReportPage />
+                : <Navigate to="/dashboard" replace />
+            }
+          />
+
+          <Route path="/" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />} />
         </Routes>
       </div>
     </Router>
   );
 }
+
 export default App;

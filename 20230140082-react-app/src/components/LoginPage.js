@@ -22,7 +22,8 @@ function LoginPage() {
         const token = response.data.token;
         localStorage.setItem('token', token); 
 
-        navigate('/dashboard');
+        window.location.href = '/dashboard';
+        //navigate('/dashboard');
 
         } catch (err) {
         setError(err.response ? err.response.data.message : 'Login gagal');

@@ -1,33 +1,40 @@
 const express = require('express');
 const router = express.Router();
-const presensiController = require('../controllers/presensiController');
-const { addUserData } = require('../middleware/permissionMiddleware');
-const { body, validationResult } = require('express-validator');
+const { Presensi } = require('../models');
+const { authenticateToken } = require('../middleware/permissionMiddleware');
 
-router.use(addUserData);
+// Check-in: create presensi with userId from token
+router.post('/check-in', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const presensi = await Presensi.create({
+      userId,
+      checkIn: new Date(),
+      checkOut: null
+    });
+    return res.status(201).json({ message: 'Check-in berhasil', data: presensi });
+  } catch (err) {
+    return res.status(500).json({ message: 'Check-in gagal', error: err.message });
+  }
+});
 
-// validator untuk PUT /api/presensi/:id
-const validatePresensiUpdate = [
-  // sesuai tugas: validasi waktuCheckIn / waktuCheckOut format tanggal (ISO 8601)
-  body('waktuCheckIn')
-    .optional()
-    .isISO8601()
-    .withMessage('waktuCheckIn harus berupa tanggal ISO 8601 yang valid'),
-  body('waktuCheckOut')
-    .optional()
-    .isISO8601()
-    .withMessage('waktuCheckOut harus berupa tanggal ISO 8601 yang valid'),
-  (req, res, next) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
-    next();
-  },
-];
+// Check-out: find last presensi for user with null checkOut and set checkOut
+router.post('/check-out', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const last = await Presensi.findOne({
+      where: { userId, checkOut: null },
+      order: [['checkIn', 'DESC']]
+    });
 
-router.post('/check-in', presensiController.CheckIn);
-router.post('/check-out', presensiController.CheckOut);
-// pasang validator di sini
-router.put('/:id', validatePresensiUpdate, presensiController.updatePresensi);
-router.delete('/:id', presensiController.deletePresensi);
+    if (!last) return res.status(400).json({ message: 'Tidak ditemukan presensi terbuka untuk user ini' });
+
+    last.checkOut = new Date();
+    await last.save();
+    return res.json({ message: 'Check-out berhasil', data: last });
+  } catch (err) {
+    return res.status(500).json({ message: 'Check-out gagal', error: err.message });
+  }
+});
 
 module.exports = router;

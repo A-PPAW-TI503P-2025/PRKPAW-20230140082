@@ -1,72 +1,51 @@
-const { User } = require('../models');
 const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');	
-const JWT_SECRET = 'INI_ADALAH_KUNCI_RAHASIA_ANDA_YANG_SANGAT_AMAN';
+const jwt = require('jsonwebtoken');
+const { User } = require('../models');
+const JWT_SECRET = process.env.JWT_SECRET || 'secretkey';
 
 exports.register = async (req, res) => {
   try {
     const { nama, email, password, role } = req.body;
+    const cleanRole = ['mahasiswa', 'admin'].includes(role) ? role : 'mahasiswa';
 
     if (!nama || !email || !password) {
-      return res.status(400).json({ message: "Nama, email, dan password harus diisi" });
+      return res.status(400).json({ message: 'Registrasi gagal', error: 'nama, email, dan password wajib diisi' });
     }
 
-    if (role && !['mahasiswa', 'admin'].includes(role)) {
-      return res.status(400).json({ message: "Role tidak valid. Harus 'mahasiswa' atau 'admin'." });
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10); 
-    const newUser = await User.create({
+    const hashed = await bcrypt.hash(password, 10);
+    const user = await User.create({
       nama,
       email,
-      password: hashedPassword,
-      role: role || 'mahasiswa' 
+      password: hashed,
+      role: cleanRole
     });
 
-    res.status(201).json({
-      message: "Registrasi berhasil",
-      data: { id: newUser.id, email: newUser.email, role: newUser.role }
-    });
+    const token = jwt.sign({ id: user.id, nama: user.nama, role: user.role }, JWT_SECRET, { expiresIn: '1d' });
 
-  } catch (error) {
-    if (error.name === 'SequelizeUniqueConstraintError') {
-      return res.status(400).json({ message: "Email sudah terdaftar." });
+    return res.status(201).json({ message: 'Registrasi berhasil', token });
+  } catch (err) {
+    if (err.name === 'SequelizeValidationError' || err.name === 'SequelizeUniqueConstraintError') {
+      const messages = err.errors ? err.errors.map(e => e.message).join(', ') : err.message;
+      return res.status(400).json({ message: 'Registrasi gagal', error: messages });
     }
-    res.status(500).json({ message: "Terjadi kesalahan pada server", error: error.message });
+    return res.status(500).json({ message: 'Registrasi gagal', error: err.message });
   }
 };
-
 
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
+    if (!email || !password) return res.status(400).json({ message: 'Email dan password diperlukan' });
 
     const user = await User.findOne({ where: { email } });
-    if (!user) {
-      return res.status(404).json({ message: "Email tidak ditemukan." });
-    }
+    if (!user) return res.status(401).json({ message: 'Email atau password salah' });
 
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(401).json({ message: "Password salah." });
-    }
+    const match = await bcrypt.compare(password, user.password);
+    if (!match) return res.status(401).json({ message: 'Email atau password salah' });
 
-    const payload = {
-      id: user.id,
-      nama: user.nama,
-      role: user.role 
-    };
-
-    const token = jwt.sign(payload, JWT_SECRET, {
-      expiresIn: '1h' 
-    });
-
-    res.json({
-      message: "Login berhasil",
-      token: token 
-    });
-
-  } catch (error) {
-    res.status(500).json({ message: "Terjadi kesalahan pada server", error: error.message });
+    const token = jwt.sign({ id: user.id, nama: user.nama, role: user.role }, JWT_SECRET, { expiresIn: '1d' });
+    return res.json({ message: 'Login berhasil', token });
+  } catch (err) {
+    return res.status(500).json({ message: 'Login gagal', error: err.message });
   }
 };

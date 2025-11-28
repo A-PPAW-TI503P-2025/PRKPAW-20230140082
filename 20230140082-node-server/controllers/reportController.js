@@ -1,41 +1,36 @@
-const { Presensi } = require('../models');
+const { Presensi, User } = require("../models");
 const { Op } = require("sequelize");
 
-exports.getDailyReport = async (req, res) => {
+exports.daily = async (req, res) => {
   try {
-    const { nama, tanggalMulai, tanggalSelesai } = req.query;
-    let where = {};
+    const { nama, startDate, endDate } = req.query;
+    const where = {};
+
+    if (startDate || endDate) {
+      where.createdAt = {};
+      if (startDate) where.createdAt[Op.gte] = new Date(startDate);
+      if (endDate) {
+        const ed = new Date(endDate);
+        ed.setHours(23, 59, 59, 999);
+        where.createdAt[Op.lte] = ed;
+      }
+    }
+
+    // Include User without alias so it matches the association defined in models
+    const include = [{ model: User, attributes: ["id", "nama", "email", "role"] }];
 
     if (nama) {
-      where.nama = { [Op.like]: `%${nama}%` };
+      include[0].where = { nama: { [Op.substring]: nama } };
     }
 
-    if (tanggalMulai && tanggalSelesai) {
-      const start = new Date(tanggalMulai);
-      const end = new Date(tanggalSelesai);
-      if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-        return res.status(400).json({ message: 'tanggalMulai atau tanggalSelesai tidak valid' });
-      }
-      end.setHours(23, 59, 59, 999);
-      where.checkIn = { [Op.between]: [start, end] };
-    } else if (tanggalMulai) {
-      const start = new Date(tanggalMulai);
-      if (isNaN(start.getTime())) return res.status(400).json({ message: 'tanggalMulai tidak valid' });
-      where.checkIn = { [Op.gte]: start };
-    } else if (tanggalSelesai) {
-      const end = new Date(tanggalSelesai);
-      if (isNaN(end.getTime())) return res.status(400).json({ message: 'tanggalSelesai tidak valid' });
-      end.setHours(23, 59, 59, 999);
-      where.checkIn = { [Op.lte]: end };
-    }
-
-    const records = await Presensi.findAll({ where, order: [['checkIn', 'ASC']] });
-
-    res.json({
-      reportDate: new Date().toLocaleDateString(),
-      data: records,
+    const presensis = await Presensi.findAll({
+      where,
+      include,
+      order: [["createdAt", "DESC"]],
     });
-  } catch (error) {
-    res.status(500).json({ message: "Gagal mengambil laporan", error: error.message });
+
+    res.json(presensis);
+  } catch (err) {
+    res.status(500).json({ message: "Gagal mengambil laporan", error: err.message });
   }
 };

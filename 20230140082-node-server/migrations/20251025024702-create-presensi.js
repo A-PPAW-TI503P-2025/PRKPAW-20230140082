@@ -13,16 +13,12 @@ module.exports = {
         type: Sequelize.INTEGER,
         allowNull: false
       },
-      nama: {
-        type: Sequelize.STRING,
-        allowNull: false
-      },
       checkIn: {
         allowNull: false,
         type: Sequelize.DATE
       },
       checkOut: {
-        allowNull: true, // checkOut bisa kosong saat pertama kali check-in
+        allowNull: true,
         type: Sequelize.DATE
       },
       createdAt: {
@@ -34,8 +30,20 @@ module.exports = {
         type: Sequelize.DATE
       }
     });
+
+    // tambahkan FK setelah tabel dibuat
+    await queryInterface.addConstraint('Presensis', {
+      fields: ['userId'],
+      type: 'foreign key',
+      name: 'fk_presensis_userId',
+      references: { table: 'Users', field: 'id' },
+      onDelete: 'CASCADE',
+      onUpdate: 'CASCADE'
+    });
   },
+
   async down(queryInterface, Sequelize) {
+    await queryInterface.removeConstraint('Presensis', 'fk_presensis_userId');
     await queryInterface.dropTable('Presensis');
   }
 };
