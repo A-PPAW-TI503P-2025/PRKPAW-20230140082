@@ -1,9 +1,12 @@
 # Tugas 9
 
-Tampilan halaman presensi-check in:
+Tampilan endpoint presensi/check-in dengan bearer token dan body latitude & longitude:
+![alt text](ss/prak9_endpoint.png)
+
+Tampilan halaman presensi/check in:
 ![alt text](ss/prak9_checkin.png)
 
-Tampilan halaman presensi-check out:
+Tampilan halaman presensi/check out:
 ![alt text](ss/prak9_checkout.png)
 
 Tampilan halaman laporan admin:
