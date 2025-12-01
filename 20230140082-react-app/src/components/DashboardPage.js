@@ -14,7 +14,10 @@ function DashboardPage() {
     user = null;
   }
 
-  const openPresensi = () => navigate('/presensi');
+  const logout = () => {
+    localStorage.removeItem('token');
+    navigate('/login');
+  };
 
   if (!user) {
     return (
@@ -27,38 +30,32 @@ function DashboardPage() {
   }
 
   // Centered layout for mahasiswa role (less top gap, content horizontally centered)
-  if (user.role === 'mahasiswa') {
     return (
-      <div className="flex flex-col items-center bg-gray-100 pt-20 px-4" style={{ height: 'calc(100vh - 64px)', overflow: 'hidden' }}>
-        <div className="w-full max-w-3xl">
-          <h1 className="text-3xl font-bold mb-6 text-center">Dashboard</h1>
+      <div className="flex items-center justify-center bg-gray-100" style={{ height: 'calc(100vh - 64px)', overflow: 'hidden' }}>
+        <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-md text-center">
+          <h2 className="text-2xl font-bold mb-3">Login Sukses!</h2>
+          <p className="text-gray-700 mb-4">Selamat datang di halaman dashboard Anda.</p>
+          <p className="text-sm text-gray-500 mb-6">{user?.nama} — ({user?.role})</p>
+          <div className="flex justify-center space-x-4">
+            <button
+              type="button"
+              onClick={() => navigate('/attendance')}
+              className="bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700"
+            >
+              Buka Presensi
+            </button>
 
-          <div className="bg-white shadow rounded-lg p-6 mx-auto w-full max-w-2xl">
-            <h2 className="text-lg font-semibold mb-2 text-center">Aksi Cepat</h2>
-            <p className="text-sm text-gray-600 mb-6 text-center">Gunakan tombol di bawah untuk membuka halaman presensi.</p>
-            <div className="flex justify-center">
-              <button
-                onClick={openPresensi}
-                className="inline-block bg-green-600 text-white py-2 px-6 rounded hover:bg-green-700"
-              >
-                Buka Presensi
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={logout}
+              className="bg-red-600 text-white py-2 px-4 rounded hover:bg-red-700"
+            >
+              Logout
+            </button>
           </div>
         </div>
       </div>
     );
-  }
-
-  // Default view for other roles (e.g., admin)
-  return (
-    <div className="flex flex-col items-center bg-gray-100 pt-20 px-4" style={{ height: 'calc(100vh - 64px)', overflow: 'hidden' }}>
-      <div className="w-full max-w-3xl text-center">
-        <h1 className="text-3xl font-bold mb-4">Dashboard</h1>
-        <p>Selamat datang, {user.nama} (role: {user.role}).</p>
-      </div>
-    </div>
-  );
 }
 
 export default DashboardPage;

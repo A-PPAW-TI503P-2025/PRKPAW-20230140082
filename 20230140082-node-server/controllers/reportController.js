@@ -16,8 +16,8 @@ exports.daily = async (req, res) => {
       }
     }
 
-    // Include User without alias so it matches the association defined in models
-    const include = [{ model: User, attributes: ["id", "nama", "email", "role"] }];
+    // Include User with alias matching the model association
+    const include = [{ model: User, as: 'user', attributes: ["id", "nama", "email", "role"], required: false }];
 
     if (nama) {
       include[0].where = { nama: { [Op.substring]: nama } };
@@ -29,7 +29,22 @@ exports.daily = async (req, res) => {
       order: [["createdAt", "DESC"]],
     });
 
-    res.json(presensis);
+    // Normalize included User into `user` property for frontend compatibility
+    const normalized = presensis.map((p) => {
+      const plain = p.toJSON();
+      return {
+        id: plain.id,
+        checkIn: plain.checkIn,
+        checkOut: plain.checkOut,
+        latitude: plain.latitude,
+        longitude: plain.longitude,
+        createdAt: plain.createdAt,
+        updatedAt: plain.updatedAt,
+        user: plain.User || plain.user || null,
+      };
+    });
+
+    res.json({ data: normalized });
   } catch (err) {
     res.status(500).json({ message: "Gagal mengambil laporan", error: err.message });
   }

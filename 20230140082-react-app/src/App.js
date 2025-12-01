@@ -1,66 +1,57 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { jwtDecode } from 'jwt-decode';
+import React from "react";
+import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
+import LoginPage from "./components/LoginPage";
+import RegisterPage from "./components/RegisterPage";
+import DashboardPage from "./components/DashboardPage";
+import AttendancePage from "./components/PresensiPage";
+import ReportPage from "./components/ReportPage";
+import Navbar from "./components/Navbar";
+import "leaflet/dist/leaflet.css";
 
-import Navbar from './components/Navbar';
-import LoginPage from './components/LoginPage';
-import RegisterPage from './components/RegisterPage';
-import DashboardPage from './components/DashboardPage';
-import PresensiPage from './components/PresensiPage';
-import ReportPage from './components/ReportPage';
+const MainLayout = ({ children }) => {
+  return (
+    <div>
+      <Navbar />
+      <main>{children}</main>
+    </div>
+  );
+};
 
 function App() {
-  const token = localStorage.getItem('token');
-
-  let user = null;
-  try {
-    if (token) user = jwtDecode(token);
-  } catch (e) {
-    localStorage.removeItem('token');
-    user = null;
-  }
-
-  const isAuthenticated = !!user;
-
   return (
     <Router>
       <div>
-        {isAuthenticated && <Navbar />}
-
         <Routes>
-          <Route
-            path="/login"
-            element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <LoginPage />}
-          />
-          <Route
-            path="/register"
-            element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <RegisterPage />}
-          />
-
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
           <Route
             path="/dashboard"
-            element={isAuthenticated ? <DashboardPage /> : <Navigate to="/login" replace />}
+            element={
+              <MainLayout>
+                <DashboardPage />
+              </MainLayout>
+            }
           />
-
           <Route
-            path="/presensi"
-            element={isAuthenticated ? <PresensiPage /> : <Navigate to="/login" replace />}
+            path="/attendance"
+            element={
+              <MainLayout>
+                <AttendancePage />
+              </MainLayout>
+            }
           />
-
           <Route
             path="/reports"
             element={
-              isAuthenticated && user && user.role === 'admin'
-                ? <ReportPage />
-                : <Navigate to="/dashboard" replace />
+              <MainLayout>
+                <ReportPage />
+              </MainLayout>
             }
           />
-
-          <Route path="/" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />} />
+          <Route path="/" element={<LoginPage />} />
         </Routes>
       </div>
     </Router>
   );
 }
-
 export default App;
