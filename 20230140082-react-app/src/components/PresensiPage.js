@@ -1,6 +1,7 @@
 // src/components/PresensiPage.js
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import axios from "axios";
+import Webcam from "react-webcam";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import L from "leaflet";
 import icon from "leaflet/dist/images/marker-icon.png";
@@ -23,6 +24,8 @@ function AttendancePage() {
 
   const [coords, setCoords] = useState(null); // {lat, lng}
   const [isLoading, setIsLoading] = useState(true);
+  const [image, setImage] = useState(null); // State untuk menyimpan foto
+  const webcamRef = useRef(null); // Ref untuk webcam
 
   const getToken = () => {
     return localStorage.getItem("token");
@@ -36,6 +39,12 @@ function AttendancePage() {
       return iso;
     }
   };
+
+  // Fungsi untuk capture foto dari webcam
+  const capture = useCallback(() => {
+    const imageSrc = webcamRef.current.getScreenshot();
+    setImage(imageSrc);
+  }, [webcamRef]);
 
   // Fungsi untuk mendapatkan lokasi pengguna
   const getLocation = () => {
@@ -69,27 +78,42 @@ function AttendancePage() {
       setError("Lokasi belum didapatkan. Mohon izinkan akses lokasi.");
       return;
     }
+    if (!image) {
+      setError("Foto wajib diambil sebelum check-in!");
+      return;
+    }
 
     // optimistic UI: show local time immediately
     const nowIso = new Date().toISOString();
     setMessage(`Check-in berhasil pada ${formatDateTime(nowIso)}`);
 
     try {
-      const config = {
-        headers: {
-          Authorization: `Bearer ${getToken()}`,
-        },
-      };
+      // Convert base64 image to blob
+      const blob = await (await fetch(image)).blob();
+
+      // Buat FormData untuk mengirim data + foto
+      const formData = new FormData();
+      formData.append('latitude', coords.lat);
+      formData.append('longitude', coords.lng);
+      formData.append('photo', blob, 'selfie.jpg');
 
       const response = await axios.post(
         "http://localhost:3001/api/presensi/check-in",
-        { latitude: coords.lat, longitude: coords.lng },
-        config
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${getToken()}`,
+            'Content-Type': 'multipart/form-data'
+          },
+        }
       );
 
       const serverTime = response?.data?.data?.checkIn || response?.data?.checkIn || response?.data?.timestamp || response?.data?.createdAt;
       if (serverTime) setMessage(`Check-in berhasil pada ${formatDateTime(serverTime)}`);
       else if (response?.data?.message) setMessage(response.data.message);
+      
+      // Reset foto setelah sukses
+      setImage(null);
     } catch (err) {
       setMessage("");
       setError(err.response ? err.response.data.message : "Check-in gagal");
@@ -149,6 +173,49 @@ function AttendancePage() {
           </div>
         </div>
       )}
+      
+      {/* Tampilan Kamera dan Foto */}
+      {!isLoading && (
+        <div className="bg-white p-4 rounded-lg shadow-md w-full mb-8 px-8 max-w-6xl">
+          <h3 className="text-xl font-semibold mb-2">Ambil Foto Bukti:</h3>
+          <div className="my-4 border rounded-lg overflow-hidden bg-black">
+            {image ? (
+              <img src={image} alt="Selfie Presensi" className="w-full" />
+            ) : (
+              <Webcam
+                audio={false}
+                ref={webcamRef}
+                screenshotFormat="image/jpeg"
+                className="w-full"
+                videoConstraints={{
+                  facingMode: "user"
+                }}
+              />
+            )}
+          </div>
+          
+          <div className="mb-4">
+            {!image ? (
+              <button
+                type="button"
+                onClick={capture}
+                className="bg-blue-600 text-white px-4 py-2 rounded w-full hover:bg-blue-700 font-semibold"
+              >
+                📸 Ambil Foto
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setImage(null)}
+                className="bg-gray-600 text-white px-4 py-2 rounded w-full hover:bg-gray-700 font-semibold"
+              >
+                🔄 Foto Ulang
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       <div
         className="bg-white p-8 rounded-lg shadow-md w-full max-w-md text-center"
         style={{ position: 'relative', zIndex: 9999, pointerEvents: 'auto' }}

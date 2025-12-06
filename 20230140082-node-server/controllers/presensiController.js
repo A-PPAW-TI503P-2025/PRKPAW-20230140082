@@ -1,6 +1,29 @@
 const { Presensi, User } = require("../models");
 const { format } = require("date-fns-tz");
+const multer = require('multer');
+const path = require('path');
 const timeZone = "Asia/Jakarta";
+
+// Konfigurasi Multer untuk upload foto
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/'); 
+  },
+  filename: (req, file, cb) => {
+    // Format nama file: userId-timestamp.jpg
+    cb(null, `${req.user.id}-${Date.now()}${path.extname(file.originalname)}`);
+  }
+});
+
+const fileFilter = (req, file, cb) => {
+  if (file.mimetype.startsWith('image/')) {
+    cb(null, true);
+  } else {
+    cb(new Error('Hanya file gambar yang diperbolehkan!'), false);
+  }
+};
+
+exports.upload = multer({ storage: storage, fileFilter: fileFilter });
 
 exports.CheckIn = async (req, res) => {
   try {
@@ -8,6 +31,9 @@ exports.CheckIn = async (req, res) => {
     const { id: userId, nama: userName } = req.user;
     const waktuSekarang = new Date();
     const { latitude, longitude } = req.body;
+    
+    // Ambil path foto bukti dari multer
+    const buktiFoto = req.file ? req.file.path : null;
 
     const existingRecord = await Presensi.findOne({
       where: { userId: userId, checkOut: null },
@@ -18,11 +44,13 @@ exports.CheckIn = async (req, res) => {
         .status(400)
         .json({ message: "Anda sudah melakukan check-in hari ini." });
     }
+    
     const newRecord = await Presensi.create({
       userId: userId,
       checkIn: waktuSekarang,
       latitude: latitude || null,
       longitude: longitude || null,
+      buktiFoto: buktiFoto // Simpan path foto
     });
 
     res.status(201).json({

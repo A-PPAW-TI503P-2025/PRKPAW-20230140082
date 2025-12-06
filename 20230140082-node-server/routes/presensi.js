@@ -3,13 +3,12 @@ const router = express.Router();
 const presensiController = require("../controllers/presensiController");
 const { authenticateToken } = require("../middleware/permissionMiddleware");
 
-router.use(authenticateToken);
+// Route check-in dengan upload foto
+router.post("/check-in", authenticateToken, presensiController.upload.single('photo'), presensiController.CheckIn);
+router.post("/check-out", authenticateToken, presensiController.CheckOut);
 
-router.post("/check-in", presensiController.CheckIn);
-router.post("/check-out", presensiController.CheckOut);
+router.put("/:id", authenticateToken, presensiController.updatePresensi);
 
-router.put("/:id", presensiController.updatePresensi);
-
-router.delete("/:id", presensiController.hapusPresensi);
+router.delete("/:id", authenticateToken, presensiController.hapusPresensi);
 
 module.exports = router;

@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
+const path = require('path'); 
 
 const presensiRoutes = require('./routes/presensi');
 const reportRoutes = require('./routes/reports');
@@ -25,6 +26,8 @@ app.get('/', (req, res) => res.send('Home Page for API'));
 app.use('/api/presensi', presensiRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/auth', authRoutes);
+
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Start server after DB authentication (do NOT use sequelize.sync({ alter: true }) here)
 (async () => {

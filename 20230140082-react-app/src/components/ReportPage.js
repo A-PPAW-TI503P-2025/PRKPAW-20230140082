@@ -7,6 +7,7 @@ function ReportPage() {
   const [error, setError] = useState(null);
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedImage, setSelectedImage] = useState(null); // State untuk modal foto
 
   const fetchReports = async (query) => {
     const token = localStorage.getItem("token");
@@ -39,9 +40,18 @@ function ReportPage() {
   useEffect(() => {
     fetchReports("");
   }, [navigate]);
+  
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     fetchReports(searchTerm);
+  };
+
+  const openImageModal = (imageUrl) => {
+    setSelectedImage(imageUrl);
+  };
+
+  const closeImageModal = () => {
+    setSelectedImage(null);
   };
 
   return (
@@ -90,6 +100,9 @@ function ReportPage() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Longitude
                 </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Bukti Foto
+                </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -117,12 +130,24 @@ function ReportPage() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {presensi.longitude || "N/A"}
                     </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {presensi.buktiFoto ? (
+                        <img
+                          src={`http://localhost:3001/${presensi.buktiFoto}`}
+                          alt="Bukti Presensi"
+                          className="w-16 h-16 object-cover rounded cursor-pointer hover:opacity-80 transition"
+                          onClick={() => openImageModal(`http://localhost:3001/${presensi.buktiFoto}`)}
+                        />
+                      ) : (
+                        <span className="text-gray-400 italic">Tidak ada foto</span>
+                      )}
+                    </td>
                   </tr>
                 ))
               ) : (
                 <tr>
                   <td
-                    colSpan="3"
+                    colSpan="6"
                     className="px-6 py-4 text-center text-gray-500"
                   >
                     Tidak ada data yang ditemukan.
@@ -131,6 +156,29 @@ function ReportPage() {
               )}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Modal untuk menampilkan foto ukuran penuh */}
+      {selectedImage && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50"
+          onClick={closeImageModal}
+        >
+          <div className="relative max-w-4xl max-h-screen p-4">
+            <button
+              onClick={closeImageModal}
+              className="absolute top-2 right-2 bg-white text-gray-800 rounded-full w-10 h-10 flex items-center justify-center hover:bg-gray-200 font-bold text-xl"
+            >
+              ×
+            </button>
+            <img
+              src={selectedImage}
+              alt="Bukti Presensi Full"
+              className="max-w-full max-h-screen object-contain rounded-lg"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
         </div>
       )}
     </div>

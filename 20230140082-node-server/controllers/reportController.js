@@ -38,6 +38,7 @@ exports.daily = async (req, res) => {
         checkOut: plain.checkOut,
         latitude: plain.latitude,
         longitude: plain.longitude,
+        buktiFoto: plain.buktiFoto,
         createdAt: plain.createdAt,
         updatedAt: plain.updatedAt,
         user: plain.User || plain.user || null,
