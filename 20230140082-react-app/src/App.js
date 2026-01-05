@@ -1,10 +1,11 @@
 import React from "react";
-import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import LoginPage from "./components/LoginPage";
 import RegisterPage from "./components/RegisterPage";
 import DashboardPage from "./components/DashboardPage";
 import AttendancePage from "./components/PresensiPage";
 import ReportPage from "./components/ReportPage";
+import SensorPage from "./components/SensorPage";
 import Navbar from "./components/Navbar";
 import "leaflet/dist/leaflet.css";
 
@@ -45,6 +46,14 @@ function App() {
             element={
               <MainLayout>
                 <ReportPage />
+              </MainLayout>
+            }
+          />
+          <Route
+            path="/monitoring"
+            element={
+              <MainLayout>
+                <SensorPage />
               </MainLayout>
             }
           />

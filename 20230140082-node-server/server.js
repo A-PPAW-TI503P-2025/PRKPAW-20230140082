@@ -12,6 +12,8 @@ const { sequelize } = require('./models');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+const iotRoutes = require("./routes/iot");
+
 app.use(cors());
 app.use(express.json());
 app.use(morgan('dev'));
@@ -28,6 +30,8 @@ app.use('/api/reports', reportRoutes);
 app.use('/api/auth', authRoutes);
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+app.use("/api/iot", iotRoutes);
 
 // Start server after DB authentication (do NOT use sequelize.sync({ alter: true }) here)
 (async () => {
