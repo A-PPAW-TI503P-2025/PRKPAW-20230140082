@@ -1,7 +1,7 @@
 # Tugas 14
 
-Tambahkan menu SensorLog di Navbar:
+Tabel database Sensorlog:
 ![alt text](ss/prak14_sensorlog.png)
 
-Screenshot tampilan halaman SensorLog:
+Tampilan halaman SensorLog:
 ![alt text](ss/prak14_navbar.png)
